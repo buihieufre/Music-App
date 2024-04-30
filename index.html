@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Music Player</title>
+    <link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+      integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="assets/css/reset.css">
+    <link rel="stylesheet" href="assets/css/style.css">
+  </head>
+  <body>
+    <div class="player">
+        <div class="dashboard">
+            <!-- Header -->
+            <header class="header">
+              <h4 class="header__text">Now playing</h4>
+              <h2 class="header__song-name">Nâng chén tiêu sầu</h2>
+            </header>
+      
+            <div class="cd">
+              <div class="cd-thumb" style="background-image: url(./assets/img/nangchentieusau.jpg);"></div>
+            </div>
+      
+            <div class="control">
+              <button class="btn btn-repeat">
+                <i class="fa-solid fa-rotate-right"></i>
+              </button>
+              <button class="btn btn-backward">
+                <i class="fa-solid fa-backward-step"></i>
+              </button>
+              <button class="btn btn-play">
+                <i class="fa-solid fa-play"></i>
+                <i class="fa-solid fa-pause"></i>
+                </button>
+              <button class="btn btn-forward">
+                <i class="fa-solid fa-forward-step"></i>
+              </button>
+              <button class="btn btn-shuffle">
+                <i class="fa-solid fa-shuffle"></i>
+              </button>
+              <audio id="audio" src=""></audio>
+            </div>
+      
+            <input type="range" name="" id="music-progress" value="0" step="1" min="0" max="10000">
+          </div>
+      
+          <div class="playlist">
+          </div>
+    </div>
+  </body>
+  <script>
+
+    const $ = document.querySelector.bind(document);
+    const $$ = document.querySelectorAll.bind(document);
+    const PLAYER_STORAGE_KEY = "BDH_PLAYER"
+    const player = $('.player')
+    const heading = $(".header__song-name");
+    const cd = $(".cd")
+    const cdThumb = $(".cd-thumb")
+    const playBtn = $('.btn-play')
+    const progress = $('#music-progress')
+    const audio = $('#audio')
+    const repeatBtn = $('.btn-repeat')
+    const forwardBtn = $('.btn-forward')
+    const backwardBtn = $('.btn-backward')
+    const randomBtn = $('.btn-shuffle') 
+	const playlist = $('.playlist')
+	const playlistItem = $('.playlist-item')
+	
+
+    const app = {
+        isRandom:false,
+        isPlaying: false,
+		isRepeated: false,
+        previousIndex: 0,
+        currentIndex: 0,
+        config: JSON.parse(localStorage.getItem(PLAYER_STORAGE_KEY)) || {},
+		setConfig: function(key, value){
+            this.config[key] = value;
+            localStorage.setItem(PLAYER_STORAGE_KEY, JSON.stringify(this.config));
+        },
+		loadConfig: function(){
+			this.isRandom = this.config.isRandom;
+			this.isRepeated = this.config.isRepeated;
+
+			//config is displayed
+			randomBtn.classList.toggle("btn-active", this.isRandom )
+			repeatBtn.classList.toggle("btn-active", this.isRepeated)
+		},
+        songs: [
+            {
+            name: "NÂNG CHÉN TIÊU SẦU",
+            singer: "Bích Phương",
+            path: "./assets/music/NangChenTieuSau-BichPhuong-14017885.mp3",
+            image: "./assets/img/nangchentieusau.jpg"
+            },
+            {
+            name: "TETVOVEN",
+            singer: "Wxrdie - AndreeRight - HandMachiot",
+            path: "./assets/music/TETVOVEN-WxrdieAndreeRightHandMachiot-12651289.mp3",
+            image:
+                "./assets/img/tevoven.jpg"
+            },
+            {
+            name: "GET LLUCKY",
+            singer: "Daft Punk ft. Pharrell Williams, Nile Rodgers",
+            path:
+                "./assets/music/Daft Punk  Get Lucky Official Audio ft Pharrell Williams Nile Rodgers_320kbps.mp3",
+            image: "./assets/img/Daft-Punk-Pictures.jpg"
+            },
+            {
+            name: "GIÁ NHƯ",
+            singer: "Soobin Hoàng Sơn",
+            path: "./assets/music/giá như  SOOBIN Hoàng Sơn LYRICSVIDEO_320kbps.mp3",
+            image:
+                "./assets/img/gianhu-soobinhoangson.png"
+            },
+            {
+            name: "HEAD IN THE CLOUDS",
+            singer: "Hayd",
+            path: "./assets/music/Hayd  Head In The Clouds Official Video_320kbps.mp3",
+            image:
+                "./assets/img/hayd-headintheclouds.jpg"
+            },
+            {
+            name: "CÀ PHÊ ",
+            singer: "MIN",
+            path:
+                "./assets/music/MIN  CÀ PHÊ  OFFICIAL MUSIC VIDEO_320kbps.mp3",
+            image:
+                "./assets/img/min-caphe.jpg"
+            },
+            {
+            name: "ANH LÀ NGOẠI LỆ CỦA EM",
+            singer: "Phương Ly",
+            path: "./assets/music/ANH LA NGOAI LÊ CUA EM  PHƯƠNG LY  OFFICIAL MV_320kbps.mp3",
+            image:
+                "./assets/img/phuongly-anhlangoailecuaem.jpg"
+            }
+        ],
+        render: function(){
+          const htmls = this.songs.map((song, index) => {
+              return `
+              <div class="playlist-item ${index === this.currentIndex ? 'playlist-item-active': ''}"  data-index="${index}">
+                  <img src="${song.image}" alt="" class="playlist-item__thumb">
+                  <div class="playlist-item-info">
+                    <h5 class="playlist-item-heading">${song.name}</h5>
+                    <p class="playlist-item-text">${song.singer}</p>
+                  </div>
+                  <button class="playlist-item__more">
+                    <i class="fa-solid fa-ellipsis"></i>
+                  </button>
+                </div>
+              
+              `
+          })
+          $(".playlist").innerHTML = htmls.join("");
+        },
+        defineProperties: function(){
+            Object.defineProperty(this, 'currentSong', {
+                get: function(){
+                    return this.songs[this.currentIndex]
+                }
+            })
+        },
+        handleEvents : function (){
+            const _this = this;
+            const cdWidth = cd.offsetWidth;
+            // handle swing or not
+            const cdThumbAnimate = cdThumb.animate(
+              [
+              {transform : 'rotate(360deg)'},
+              ],
+              {
+                duration: 10000,
+                iterations: Infinity
+              }
+            
+            )
+            cdThumbAnimate.pause()
+            // Handle on scroll event
+            document.onscroll = function () {
+                const scrollTop = document.documentElement.scrollTop || window.scrollY;
+                const newWidth = cdWidth - scrollTop;
+                cd.style.width = newWidth > 0 ? newWidth + 'px': 0;
+                cd.style.opacity = (newWidth / cdWidth)
+            }
+
+            // handle on click play btn
+            playBtn.onclick = function (){
+                if(_this.isPlaying){
+                  audio.pause();
+                }else {
+                  audio.play();
+                }
+            }
+
+            // handle when song is played
+            audio.onplay = function (){
+              _this.isPlaying = true;
+              player.classList.add("playing")
+              cdThumbAnimate.play();
+            }
+
+            // handle when song is paused
+            audio.onpause = function (){
+              _this.isPlaying = false;
+              player.classList.remove("playing")
+              cdThumbAnimate.pause();
+            }
+            
+            //handle when song progress change
+            audio.ontimeupdate = function (){
+              if(audio.duration){
+                const progressPercent = Math.floor(audio.currentTime / audio.duration * 10000);
+                progress.value = progressPercent;
+              }
+            }
+
+            // handle when seeking 
+            progress.oninput = function (e){
+              const currentProgress = audio.duration/10000 * e.target.value;
+              audio.currentTime = currentProgress;
+            }
+
+            // handle next song
+            forwardBtn.onclick = function(){
+              if(_this.isRandom){
+                _this.randomSong();
+              }
+              else {
+                _this.nextSong();
+              }
+              audio.play();
+			  _this.render();
+			  _this.scrollToView();
+            }
+
+            // handle previous song
+            backwardBtn.onclick = function() {
+              if(_this.isRandom){
+                _this.randomSong();
+              }
+              else {
+                _this.prevSong();
+              }
+              audio.play();
+			  _this.render();
+			  _this.scrollToView();
+            }
+
+            //handle random song
+            randomBtn.onclick = function (){
+              _this.isRandom = !_this.isRandom;
+			  _this.setConfig("isRandom", _this.isRandom);
+              randomBtn.classList.toggle("btn-active", _this.isRandom )
+            }
+
+           
+           //Active repeat btn
+			repeatBtn.onclick= function(){
+				_this.isRepeated = !_this.isRepeated;
+				_this.setConfig('isRepeated', _this.isRepeated);
+				repeatBtn.classList.toggle("btn-active", _this.isRepeated)
+			}
+			// Handle when current song is ended
+           audio.onended = function(){
+				if(_this.isRepeated){
+					audio.play()
+				}else{
+					forwardBtn.click();
+				}
+           }
+		   
+		   playlist.onclick = function(e){
+			const songNode = e.target.closest(".playlist-item:not(.playlist-item-active)");
+			if(songNode || e.target.closest('.playlist-item__more')){
+				if(songNode){
+					$(".playlist-item-active").classList.remove("playlist-item-active");
+					_this.currentIndex = songNode.dataset.index;
+					_this.loadCurrentSong();
+					audio.play();
+					songNode.classList.add("playlist-item-active");
+				}else{
+
+				}
+			}
+		   }
+
+
+        },
+        loadCurrentSong: function(){
+            heading.textContent = this.currentSong.name;
+            cdThumb.style.backgroundImage =`url(${this.currentSong.image})`;
+            audio.src = this.currentSong.path;
+			
+        },
+        nextSong: function(){
+          this.previousIndex = this.currentIndex;
+          this.currentIndex++;
+          if(this.currentIndex >= this.songs.length){
+            this.currentIndex = 0;
+          }
+          this.loadCurrentSong();
+        },
+        prevSong: function() {
+          this.previousIndex = this.currentIndex;
+          this.currentIndex--;
+          if(this.currentIndex < 0){
+            this.currentIndex = this.songs.length - 1;
+          }
+          this.loadCurrentSong();
+        },
+        randomSong: function(){
+          this.previousIndex = this.currentIndex;
+          this.currentIndex = Math.floor(Math.random() * (this.songs.length -1));
+          while(this.currentIndex === this.previousIndex){
+            this.currentIndex = Math.floor(Math.random() * (this.songs.length -1));
+          }
+          this.loadCurrentSong();
+        },
+		scrollToView:function(){
+			setTimeout(function(){
+				$('.playlist-item-active').scrollIntoView(
+					{
+						behaviour:'smooth',
+						block: 'center',
+					}
+				);
+			},500)
+		},
+        start: function(){
+			this.loadConfig();
+            this.defineProperties();
+            this.handleEvents();
+            this.loadCurrentSong();
+            this.render();
+        }
+
+    }
+
+    app.start();
+
+    
+  </script>
+</html>
